@@ -6,75 +6,184 @@
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 min-h-screen py-10">
-  <div class="max-w-2xl mx-auto bg-white p-8 rounded-xl shadow-lg">
-    <h2 class="text-2xl font-bold mb-6 text-center text-blue-600">ระบบจำแนกประเภทครอบครัว</h2>
+  <div class="max-w-4xl mx-auto bg-white p-8 rounded-xl shadow-lg">
+    <h2 class="text-3xl font-bold mb-8 text-center text-blue-600">ระบบจำแนกประเภทครอบครัว</h2>
 
     <!-- ฟอร์มเพิ่มสมาชิก -->
-    <div class="mb-4">
-      <label class="block mb-2 text-gray-700">เลือกความสัมพันธ์:</label>
-      <div class="flex gap-2">
-        <select id="relation" class="flex-1 border border-gray-300 rounded px-2 py-1">
-          <option value="husband">สามี</option>
-          <option value="wife">ภรรยา</option>
-          <option value="father">พ่อ</option>
-          <option value="mother">แม่</option>
-          <option value="child">บุตร</option>
-          <option value="grandparent">ปู่/ย่า/ตา/ยาย</option>
-          <option value="mother-in-law">แม่สามี/แม่ภรรยา</option>
-        </select>
-        <button onclick="addMember()" class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">เพิ่ม</button>
+    <div class="mb-6 p-6 bg-gray-50 rounded-lg">
+      <h3 class="text-lg font-semibold mb-4 text-gray-800">เพิ่มสมาชิกในครอบครัว</h3>
+      
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+        <div>
+          <label class="block mb-1 text-sm text-gray-700">ความสัมพันธ์:</label>
+          <select id="relation" class="w-full border border-gray-300 rounded px-3 py-2">
+            <option value="husband">สามี</option>
+            <option value="wife">ภรรยา</option>
+            <option value="father">พ่อ</option>
+            <option value="mother">แม่</option>
+            <option value="child">ลูก</option>
+            <option value="grandparent">ปู่/ย่า/ตา/ยาย</option>
+            <option value="mother-in-law">แม่ยาย/แม่สามี</option>
+            <option value="sibling">พี่น้อง/ญาติ</option>
+          </select>
+        </div>
+        
+        <div>
+          <label class="block mb-1 text-sm text-gray-700">อายุ:</label>
+          <input type="number" id="age" min="0" max="120" class="w-full border border-gray-300 rounded px-3 py-2" placeholder="อายุ">
+        </div>
+        
+        <div>
+          <label class="block mb-1 text-sm text-gray-700">เพศ:</label>
+          <select id="gender" class="w-full border border-gray-300 rounded px-3 py-2">
+            <option value="male">ชาย</option>
+            <option value="female">หญิง</option>
+          </select>
+        </div>
+        
+        <div class="flex items-end">
+          <button onclick="addMember()" class="w-full bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-colors">เพิ่มสมาชิก</button>
+        </div>
       </div>
-      <ul id="memberList" class="mt-2 list-disc list-inside text-sm text-gray-700"></ul>
+
+      <!-- ลักษณะเฉพาะสำหรับครอบครัวผสม -->
+      <div class="mb-4">
+        <label class="flex items-center text-sm text-gray-700">
+          <input type="checkbox" id="has_stepchild" class="mr-2">
+          สมาชิกคนนี้มีลูกติดมาจากความสัมพันธ์เดิม (สำหรับครอบครัวผสม)
+        </label>
+      </div>
     </div>
 
-    <!-- ลักษณะเฉพาะ -->
-    <div class="mb-4">
-      <h3 class="font-semibold mb-2 text-gray-800">ลักษณะเฉพาะของครอบครัว:</h3>
-      <div class="space-y-1 text-sm text-gray-700">
-        <label><input type="checkbox" id="is_single_parent"> พ่อหรือแม่เลี้ยงเดี่ยว</label>
-        <label><input type="checkbox" id="is_skipped_generation"> ปู่ย่าตายายอยู่กับหลานโดยลำพัง</label>
-        <label><input type="checkbox" id="is_only_elderly"> ผู้สูงอายุอยู่ด้วยกันลำพัง</label>
-        <label><input type="checkbox" id="is_same_sex_couple"> คู่รักเพศเดียวกัน</label>
-        <label><input type="checkbox" id="is_step_family"> ครอบครัวผสม</label>
-        <label><input type="checkbox" id="is_teenage_family"> ครอบครัววัยรุ่น</label>
+    <!-- รายชื่อสมาชิก -->
+    <div class="mb-6">
+      <h3 class="text-lg font-semibold mb-3 text-gray-800">สมาชิกในครอบครัว:</h3>
+      <div id="memberList" class="bg-gray-50 p-4 rounded-lg min-h-24">
+        <p class="text-gray-500 text-sm">ยังไม่มีสมาชิกในครอบครัว</p>
       </div>
+      <button onclick="clearMembers()" class="mt-2 bg-red-500 text-white px-3 py-1 rounded text-sm hover:bg-red-600 transition-colors">ล้างรายชื่อ</button>
     </div>
 
     <!-- ปุ่มและผลลัพธ์ -->
     <div class="text-center">
-      <button onclick="classify()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">จำแนกประเภท</button>
-      <p id="result" class="mt-4 text-lg font-semibold text-purple-700"></p>
+      <button onclick="classify()" class="bg-green-600 text-white px-8 py-3 rounded-lg text-lg hover:bg-green-700 transition-colors shadow-lg">จำแนกประเภทครอบครัว</button>
+      <div id="result" class="mt-6 p-4 bg-purple-50 rounded-lg hidden">
+        <p class="text-xl font-bold text-purple-700"></p>
+      </div>
+    </div>
+
+    <!-- คำอธิบายประเภทครอบครัว -->
+    <div class="mt-8 bg-blue-50 p-6 rounded-lg">
+      <h3 class="text-lg font-semibold mb-4 text-blue-800">ประเภทครอบครัวและเงื่อนไข:</h3>
+      <div class="text-sm text-blue-700 space-y-2">
+        <p><strong>ครอบครัววัยรุ่น:</strong> สามี-ภรรยาอายุ < 20 ปี (ลูกถ้ามีต้องอายุ < 20 ปี)</p>
+        <p><strong>ครอบครัวผสม:</strong> สามีหรือภรรยามีลูกติดจากความสัมพันธ์เดิม</p>
+        <p><strong>ครอบครัวพ่อแม่เลี้ยงเดี่ยว:</strong> พ่อหรือแม่คนเดียวเลี้ยงลูกอายุ < 20 ปี</p>
+        <p><strong>ครอบครัวข้ามรุ่น:</strong> ปู่ย่าตายายอยู่กับหลานโดยลำพัง</p>
+        <p><strong>ครอบครัวผู้สูงอายุ:</strong> สมาชิกทุกคนอายุ > 60 ปี</p>
+        <p><strong>ครอบครัวคู่รักเพศเดียวกัน:</strong> สามี-ภรรยาเป็นเพศเดียวกัน</p>
+        <p><strong>ครอบครัวเดี่ยว:</strong> สามี-ภรรยา-ลูก</p>
+        <p><strong>ครอบครัวขยาย:</strong> ครอบครัวเดี่ยว + ญาติพี่น้องหรือพ่อแม่</p>
+      </div>
     </div>
   </div>
 
   <script>
     let members = [];
+
     function addMember() {
       const relation = document.getElementById('relation').value;
-      members.push({ relation: relation });
-      const item = document.createElement('li');
-      item.textContent = relation;
-      document.getElementById('memberList').appendChild(item);
+      const age = parseInt(document.getElementById('age').value);
+      const gender = document.getElementById('gender').value;
+      const hasStepchild = document.getElementById('has_stepchild').checked;
+
+      if (isNaN(age) || age < 0) {
+        alert('กรุณาใส่อายุที่ถูกต้อง');
+        return;
+      }
+
+      const member = {
+        relation: relation,
+        age: age,
+        gender: gender,
+        has_stepchild: hasStepchild
+      };
+
+      members.push(member);
+      updateMemberList();
+      
+      // ล้างฟอร์ม
+      document.getElementById('age').value = '';
+      document.getElementById('has_stepchild').checked = false;
+    }
+
+    function updateMemberList() {
+      const list = document.getElementById('memberList');
+      
+      if (members.length === 0) {
+        list.innerHTML = '<p class="text-gray-500 text-sm">ยังไม่มีสมาชิกในครอบครัว</p>';
+        return;
+      }
+
+      const relationNames = {
+        'husband': 'สามี',
+        'wife': 'ภรรยา', 
+        'father': 'พ่อ',
+        'mother': 'แม่',
+        'child': 'ลูก',
+        'grandparent': 'ปู่/ย่า/ตา/ยาย',
+        'mother-in-law': 'แม่ยาย/แม่สามี',
+        'sibling': 'พี่น้อง/ญาติ'
+      };
+
+      const genderNames = {
+        'male': 'ชาย',
+        'female': 'หญิง'
+      };
+
+      list.innerHTML = members.map((member, index) => `
+        <div class="flex justify-between items-center bg-white p-3 rounded mb-2 border">
+          <span>
+            ${relationNames[member.relation]} - อายุ ${member.age} ปี - เพศ${genderNames[member.gender]}
+            ${member.has_stepchild ? ' (มีลูกติด)' : ''}
+          </span>
+          <button onclick="removeMember(${index})" class="bg-red-500 text-white px-2 py-1 rounded text-xs hover:bg-red-600">ลบ</button>
+        </div>
+      `).join('');
+    }
+
+    function removeMember(index) {
+      members.splice(index, 1);
+      updateMemberList();
+    }
+
+    function clearMembers() {
+      members = [];
+      updateMemberList();
+      document.getElementById('result').classList.add('hidden');
     }
 
     function classify() {
-      const relationships = {
-        is_single_parent: document.getElementById('is_single_parent').checked,
-        is_skipped_generation: document.getElementById('is_skipped_generation').checked,
-        is_only_elderly: document.getElementById('is_only_elderly').checked,
-        is_same_sex_couple: document.getElementById('is_same_sex_couple').checked,
-        is_step_family: document.getElementById('is_step_family').checked,
-        is_teenage_family: document.getElementById('is_teenage_family').checked
-      };
+      if (members.length === 0) {
+        alert('กรุณาเพิ่มสมาชิกในครอบครัวก่อน');
+        return;
+      }
 
       fetch('/classify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ members: members, relationships: relationships })
+        body: JSON.stringify({ members: members })
       })
       .then(res => res.json())
       .then(data => {
-        document.getElementById('result').textContent = data.family_type;
+        const resultDiv = document.getElementById('result');
+        const resultText = resultDiv.querySelector('p');
+        resultText.textContent = `ประเภทครอบครัว: ${data.family_type}`;
+        resultDiv.classList.remove('hidden');
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('เกิดข้อผิดพลาดในการจำแนกประเภทครอบครัว');
       });
     }
   </script>

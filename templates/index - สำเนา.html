@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>จำแนกประเภทครอบครัว</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen py-10">
+  <div class="max-w-2xl mx-auto bg-white p-8 rounded-xl shadow-lg">
+    <h2 class="text-2xl font-bold mb-6 text-center text-blue-600">ระบบจำแนกประเภทครอบครัว</h2>
+
+    <!-- ฟอร์มเพิ่มสมาชิก -->
+    <div class="mb-4">
+      <label class="block mb-2 text-gray-700">เลือกความสัมพันธ์:</label>
+      <div class="flex gap-2">
+        <select id="relation" class="flex-1 border border-gray-300 rounded px-2 py-1">
+          <option value="husband">สามี</option>
+          <option value="wife">ภรรยา</option>
+          <option value="father">พ่อ</option>
+          <option value="mother">แม่</option>
+          <option value="child">บุตร</option>
+          <option value="grandparent">ปู่/ย่า/ตา/ยาย</option>
+          <option value="mother-in-law">แม่สามี/แม่ภรรยา</option>
+        </select>
+        <button onclick="addMember()" class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">เพิ่ม</button>
+      </div>
+      <ul id="memberList" class="mt-2 list-disc list-inside text-sm text-gray-700"></ul>
+    </div>
+
+    <!-- ลักษณะเฉพาะ -->
+    <div class="mb-4">
+      <h3 class="font-semibold mb-2 text-gray-800">ลักษณะเฉพาะของครอบครัว:</h3>
+      <div class="space-y-1 text-sm text-gray-700">
+        <label><input type="checkbox" id="is_single_parent"> พ่อหรือแม่เลี้ยงเดี่ยว</label>
+        <label><input type="checkbox" id="is_skipped_generation"> ปู่ย่าตายายอยู่กับหลานโดยลำพัง</label>
+        <label><input type="checkbox" id="is_only_elderly"> ผู้สูงอายุอยู่ด้วยกันลำพัง</label>
+        <label><input type="checkbox" id="is_same_sex_couple"> คู่รักเพศเดียวกัน</label>
+        <label><input type="checkbox" id="is_step_family"> ครอบครัวผสม</label>
+        <label><input type="checkbox" id="is_teenage_family"> ครอบครัววัยรุ่น</label>
+      </div>
+    </div>
+
+    <!-- ปุ่มและผลลัพธ์ -->
+    <div class="text-center">
+      <button onclick="classify()" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">จำแนกประเภท</button>
+      <p id="result" class="mt-4 text-lg font-semibold text-purple-700"></p>
+    </div>
+  </div>
+
+  <script>
+    let members = [];
+    function addMember() {
+      const relation = document.getElementById('relation').value;
+      members.push({ relation: relation });
+      const item = document.createElement('li');
+      item.textContent = relation;
+      document.getElementById('memberList').appendChild(item);
+    }
+
+    function classify() {
+      const relationships = {
+        is_single_parent: document.getElementById('is_single_parent').checked,
+        is_skipped_generation: document.getElementById('is_skipped_generation').checked,
+        is_only_elderly: document.getElementById('is_only_elderly').checked,
+        is_same_sex_couple: document.getElementById('is_same_sex_couple').checked,
+        is_step_family: document.getElementById('is_step_family').checked,
+        is_teenage_family: document.getElementById('is_teenage_family').checked
+      };
+
+      fetch('/classify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ members: members, relationships: relationships })
+      })
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('result').textContent = data.family_type;
+      });
+    }
+  </script>
+</body>
+</html>
