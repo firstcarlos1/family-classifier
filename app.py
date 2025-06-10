@@ -193,5 +193,7 @@ def is_nuclear_family(members):
 import os
 
 if __name__ == '__main__':
+    import os
     port = int(os.environ.get('PORT', 5000))
+    print(f"Starting app on port {port}")
     app.run(host='0.0.0.0', port=port, debug=False)
