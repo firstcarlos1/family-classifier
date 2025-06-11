@@ -9,10 +9,13 @@ def classify_family_type(members):
     """
     # ตรวจสอบสมาชิกแต่ละประเภท
     spouses = [m for m in members if m['relation'] in ['husband', 'wife']]
-    children = [m for m in members if m['relation'] == 'child']
+    children = [m for m in members if m['relation'] in ['son', 'daughter']]
     parents = [m for m in members if m['relation'] in ['father', 'mother']]
-    grandparents = [m for m in members if m['relation'] == 'grandparent']
-    others = [m for m in members if m['relation'] in ['sibling', 'mother-in-law']]
+    grandparents = [m for m in members if m['relation'] in ['grandfather', 'grandmother', 'grandfather-maternal', 'grandmother-maternal']]
+    grandchildren = [m for m in members if m['relation'] in ['grandson', 'granddaughter']]
+    siblings = [m for m in members if m['relation'] in ['older-brother', 'older-sister', 'younger-brother', 'younger-sister']]
+    uncles_aunts = [m for m in members if m['relation'] in ['uncle', 'aunt', 'uncle-maternal', 'aunt-maternal']]
+    relatives = [m for m in members if m['relation'] in ['relative']]
     
     # มีลูกติดจากความสัมพันธ์เดิม
     has_stepchildren = any(m.get('has_stepchild', False) for m in members)
@@ -35,7 +38,7 @@ def classify_family_type(members):
         return "ครอบครัวพ่อแม่เลี้ยงเดี่ยว"
     
     # 4. ครอบครัวข้ามรุ่น (ปู่ย่ากับหลาน)
-    if grandparents and children and not spouses and not parents:
+    if grandparents and grandchildren and not spouses and not parents:
         return "ครอบครัวข้ามรุ่น"
     
     # 5. ครอบครัวผู้สูงอายุ
@@ -49,16 +52,20 @@ def classify_family_type(members):
             return "ครอบครัวคู่รักเพศเดียวกัน"
     
     # 7. ครอบครัวขยาย
-    if spouses and children and (parents or grandparents or others):
+    if spouses and children and (parents or grandparents or siblings or uncles_aunts or relatives):
         return "ครอบครัวขยาย"
     
     # 8. ครอบครัวเดี่ยว
-    if spouses and children and not parents and not grandparents and not others:
+    if spouses and children and not parents and not grandparents and not siblings and not uncles_aunts and not relatives:
         return "ครอบครัวเดี่ยว"
     
     # 9. ครอบครัวคู่รัก (ไม่มีลูก)
     if spouses and not children:
         return "ครอบครัวคู่รัก"
+    
+    # 10. ครอบครัวพี่น้อง
+    if siblings and not spouses and not parents:
+        return "ครอบครัวพี่น้อง"
     
     # กรณีอื่นๆ
     return "ครอบครัวแบบอื่นๆ"
