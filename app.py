@@ -1,6 +1,40 @@
 from flask import Flask, render_template, request, jsonify
+import os
 
 app = Flask(__name__)
+
+# Family classification logic
+def classify_family_member(age, gender, relationship_to_you):
+    """
+    Classify family member based on age, gender, and relationship
+    """
+    classifications = []
+    
+    # Age-based classification
+    if age < 18:
+        classifications.append("เด็ก/วัยรุ่น")
+    elif age < 60:
+        classifications.append("ผู้ใหญ่")
+    else:
+        classifications.append("ผู้สูงอายุ")
+    
+    # Relationship-based classification
+    if relationship_to_you in ["พ่อ", "แม่"]:
+        classifications.append("ผู้ปกครอง")
+    elif relationship_to_you in ["ลูกชาย", "ลูกสาว"]:
+        classifications.append("บุตร")
+    elif relationship_to_you in ["พี่ชาย", "พี่สาว", "น้องชาย", "น้องสาว"]:
+        classifications.append("พี่น้อง")
+    elif relationship_to_you in ["ปู่", "ย่า", "ตา", "ยาย"]:
+        classifications.append("ผู้สูงอายุในครอบครัว")
+    
+    # Gender-based classification
+    if gender == "ชาย":
+        classifications.append("สมาชิกครอบครัวเพศชาย")
+    else:
+        classifications.append("สมาชิกครอบครัวเพศหญิง")
+    
+    return classifications
 
 @app.route('/')
 def index():
@@ -8,192 +42,56 @@ def index():
 
 @app.route('/classify', methods=['POST'])
 def classify():
-    data = request.get_json()
-    members = data.get('members', [])
-    
-    family_type = "ไม่สามารถจำแนกได้"
-    
-    # ตรวจสอบครอบครัววัยรุ่น
-    if is_teenage_family(members):
-        family_type = "ครอบครัววัยรุ่น"
-    # ตรวจสอบครอบครัวผสม
-    elif is_step_family(members):
-        family_type = "ครอบครัวผสม"
-    # ตรวจสอบครอบครัวพ่อหรือแม่เลี้ยงเดี่ยว
-    elif is_single_parent_family(members):
-        family_type = "ครอบครัวพ่อหรือแม่เลี้ยงเดี่ยว"
-    # ตรวจสอบครอบครัวข้ามรุ่น
-    elif is_skipped_generation_family(members):
-        family_type = "ครอบครัวข้ามรุ่น"
-    # ตรวจสอบครอบครัวผู้สูงอายุ
-    elif is_elderly_only_family(members):
-        family_type = "ครอบครัวที่ผู้สูงอายุอยู่ด้วยกันตามลำพัง"
-    # ตรวจสอบครอบครัวคู่รักเพศเดียวกัน
-    elif is_same_sex_couple_family(members):
-        family_type = "ครอบครัวคู่รักเพศเดียวกัน"
-    # ตรวจสอบครอบครัวขยาย
-    elif is_extended_family(members):
-        family_type = "ครอบครัวขยาย"
-    # ตรวจสอบครอบครัวเดี่ยว
-    elif is_nuclear_family(members):
-        family_type = "ครอบครัวเดี่ยว"
-    
-    return jsonify({'family_type': family_type})
+    try:
+        data = request.get_json()
+        
+        name = data.get('name', '')
+        age = int(data.get('age', 0))
+        gender = data.get('gender', '')
+        relationship = data.get('relationship', '')
+        
+        # Validate input
+        if not all([name, age, gender, relationship]):
+            return jsonify({
+                'success': False,
+                'error': 'กรุณากรอกข้อมูลให้ครบถ้วน'
+            })
+        
+        if age < 0 or age > 150:
+            return jsonify({
+                'success': False,
+                'error': 'อายุไม่ถูกต้อง'
+            })
+        
+        # Classify family member
+        classifications = classify_family_member(age, gender, relationship)
+        
+        return jsonify({
+            'success': True,
+            'name': name,
+            'age': age,
+            'gender': gender,
+            'relationship': relationship,
+            'classifications': classifications
+        })
+        
+    except ValueError:
+        return jsonify({
+            'success': False,
+            'error': 'ข้อมูลอายุไม่ถูกต้อง'
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'เกิดข้อผิดพลาด: {str(e)}'
+        })
 
-def is_teenage_family(members):
-    """ครอบครัววัยรุ่น: สามี+ภรรยา อายุ<20, ลูก(ถ้ามี)อายุ<20"""
-    husband = None
-    wife = None
-    children = []
-    
-    for member in members:
-        if member['relation'] == 'husband':
-            husband = member
-        elif member['relation'] == 'wife':
-            wife = member
-        elif member['relation'] == 'child':
-            children.append(member)
-    
-    # ต้องมีสามีและภรรยา
-    if not husband or not wife:
-        return False
-    
-    # สามีและภรรยาต้องอายุ < 20
-    if husband['age'] >= 20 or wife['age'] >= 20:
-        return False
-    
-    # ลูก(ถ้ามี)ต้องอายุ < 20
-    for child in children:
-        if child['age'] >= 20:
-            return False
-    
-    return True
-
-def is_step_family(members):
-    """ครอบครัวผสม: สามีมีลูกติด และ/หรือ ภรรยามีลูกติด"""
-    husband = None
-    wife = None
-    
-    for member in members:
-        if member['relation'] == 'husband':
-            husband = member
-        elif member['relation'] == 'wife':
-            wife = member
-    
-    # ต้องมีสามีและภรรยา
-    if not husband or not wife:
-        return False
-    
-    # ตรวจสอบว่ามีลูกติด (ในที่นี้ใช้ attribute has_stepchild)
-    return husband.get('has_stepchild', False) or wife.get('has_stepchild', False)
-
-def is_single_parent_family(members):
-    """ครอบครัวพ่อหรือแม่เลี้ยงเดี่ยว: สามีหรือภรรยา + ลูกอายุ<20"""
-    parents = []
-    children = []
-    
-    for member in members:
-        if member['relation'] in ['husband', 'wife']:
-            parents.append(member)
-        elif member['relation'] == 'child':
-            children.append(member)
-    
-    # ต้องมีพ่อหรือแม่คนเดียว และมีลูก
-    if len(parents) != 1 or len(children) == 0:
-        return False
-    
-    # ลูกต้องอายุ < 20
-    for child in children:
-        if child['age'] >= 20:
-            return False
-    
-    return True
-
-def is_skipped_generation_family(members):
-    """ครอบครัวข้ามรุ่น: ปู่ย่าตายาย + หลาน (ไม่มีพ่อแม่)"""
-    grandparents = []
-    grandchildren = []
-    parents = []
-    
-    for member in members:
-        if member['relation'] == 'grandparent':
-            grandparents.append(member)
-        elif member['relation'] == 'child':
-            grandchildren.append(member)
-        elif member['relation'] in ['husband', 'wife', 'father', 'mother']:
-            parents.append(member)
-    
-    # ต้องมีปู่ย่าตายาย และหลาน แต่ไม่มีพ่อแม่
-    return len(grandparents) > 0 and len(grandchildren) > 0 and len(parents) == 0
-
-def is_elderly_only_family(members):
-    """ครอบครัวผู้สูงอายุ: สมาชิกทุกคนอายุ > 60"""
-    if len(members) == 0:
-        return False
-    
-    for member in members:
-        if member['age'] <= 60:
-            return False
-    
-    return True
-
-def is_same_sex_couple_family(members):
-    """ครอบครัวคู่รักเพศเดียวกัน: สามี+ภรรยา เพศเดียวกัน"""
-    husband = None
-    wife = None
-    
-    for member in members:
-        if member['relation'] == 'husband':
-            husband = member
-        elif member['relation'] == 'wife':
-            wife = member
-    
-    # ต้องมีสามีและภรรยา
-    if not husband or not wife:
-        return False
-    
-    # ต้องเป็นเพศเดียวกัน
-    return husband['gender'] == wife['gender']
-
-def is_extended_family(members):
-    """ครอบครัวขยาย: สามี+ภรรยา+ลูก+ญาติพี่น้อง/พ่อแม่"""
-    core_family = []
-    extended_members = []
-    
-    for member in members:
-        if member['relation'] in ['husband', 'wife', 'child']:
-            core_family.append(member)
-        elif member['relation'] in ['father', 'mother', 'grandparent', 'mother-in-law', 'sibling']:
-            extended_members.append(member)
-    
-    # ต้องมีครอบครัวแกนกลาง และญาติพี่น้อง
-    husband = any(m['relation'] == 'husband' for m in core_family)
-    wife = any(m['relation'] == 'wife' for m in core_family)
-    
-    return husband and wife and len(extended_members) > 0
-
-def is_nuclear_family(members):
-    """ครอบครัวเดี่ยว: สามี+ภรรยา+ลูก"""
-    husband = False
-    wife = False
-    has_children = False
-    
-    for member in members:
-        if member['relation'] == 'husband':
-            husband = True
-        elif member['relation'] == 'wife':
-            wife = True
-        elif member['relation'] == 'child':
-            has_children = True
-        elif member['relation'] in ['grandparent', 'mother-in-law', 'father']:
-            return False  # มีญาติอื่น = ไม่ใช่ครอบครัวเดี่ยว
-    
-    return husband and wife and has_children
-
-import os
+@app.route('/health')
+def health():
+    return jsonify({'status': 'healthy'})
 
 if __name__ == '__main__':
-    import os
+    # For Render deployment
     port = int(os.environ.get('PORT', 5000))
-    print(f"Starting app on port {port}")
+    print(f"🚀 Starting Family Classifier on port {port}")
     app.run(host='0.0.0.0', port=port, debug=False)

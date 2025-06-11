@@ -2,6 +2,7 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>จำแนกประเภทครอบครัว</title>
   <script src="https://cdn.tailwindcss.com"></script>
 </head>
@@ -69,6 +70,7 @@
       <button onclick="classify()" class="bg-green-600 text-white px-8 py-3 rounded-lg text-lg hover:bg-green-700 transition-colors shadow-lg">จำแนกประเภทครอบครัว</button>
       <div id="result" class="mt-6 p-4 bg-purple-50 rounded-lg hidden">
         <p class="text-xl font-bold text-purple-700"></p>
+        <p class="text-sm text-purple-600 mt-2"></p>
       </div>
     </div>
 
@@ -84,6 +86,7 @@
         <p><strong>ครอบครัวคู่รักเพศเดียวกัน:</strong> สามี-ภรรยาเป็นเพศเดียวกัน</p>
         <p><strong>ครอบครัวเดี่ยว:</strong> สามี-ภรรยา-ลูก</p>
         <p><strong>ครอบครัวขยาย:</strong> ครอบครัวเดี่ยว + ญาติพี่น้องหรือพ่อแม่</p>
+        <p><strong>ครอบครัวคู่รัก:</strong> สามี-ภรรยาไม่มีลูก</p>
       </div>
     </div>
   </div>
@@ -178,8 +181,15 @@
       .then(data => {
         const resultDiv = document.getElementById('result');
         const resultText = resultDiv.querySelector('p');
-        resultText.textContent = `ประเภทครอบครัว: ${data.family_type}`;
-        resultDiv.classList.remove('hidden');
+        const countText = resultDiv.querySelectorAll('p')[1];
+        
+        if (data.success) {
+          resultText.textContent = `ประเภทครอบครัว: ${data.family_type}`;
+          countText.textContent = `จำนวนสมาชิก: ${data.member_count} คน`;
+          resultDiv.classList.remove('hidden');
+        } else {
+          alert(data.error || 'เกิดข้อผิดพลาดในการจำแนกประเภทครอบครัว');
+        }
       })
       .catch(error => {
         console.error('Error:', error);
